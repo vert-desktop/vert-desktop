@@ -27,6 +27,12 @@
     "linux": {
       "deb": {
         "depends": []
+      },
+      "snap": {
+        "confinement": "strict",
+        "grade": "stable",
+        "base": "core22",
+        "appPlugs": ["home", "removable-media"]
       }
     },
     "macOS": {
