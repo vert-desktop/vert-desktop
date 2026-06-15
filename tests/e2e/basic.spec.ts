@@ -6,24 +6,24 @@ test.describe("Home page", () => {
   });
 
   test("shows app title and tagline", async ({ page }) => {
-    await expect(page.locator("text=VERT")).toBeVisible();
-    await expect(page.locator("text=Desktop")).toBeVisible();
+    await expect(page.getByText("VERT", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Desktop", { exact: true })).toBeVisible();
   });
 
   test("shows category cards", async ({ page }) => {
-    await expect(page.locator("text=Images")).toBeVisible();
-    await expect(page.locator("text=Audio")).toBeVisible();
-    await expect(page.locator("text=Video")).toBeVisible();
-    await expect(page.locator("text=Documents")).toBeVisible();
+    await expect(page.getByText("Images", { exact: true })).toBeVisible();
+    await expect(page.getByText("Audio", { exact: true })).toBeVisible();
+    await expect(page.getByText("Video", { exact: true })).toBeVisible();
+    await expect(page.getByText("Documents", { exact: true })).toBeVisible();
   });
 
   test("shows file drop zone", async ({ page }) => {
-    await expect(page.locator("text=Drop files here")).toBeVisible();
+    await expect(page.getByText("Drop files here")).toBeVisible();
   });
 
   test("navigation links are visible", async ({ page }) => {
-    await expect(page.locator("nav a[href='/']")).toBeVisible();
-    await expect(page.locator("nav a[href='/settings']")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
   });
 });
 
@@ -33,21 +33,21 @@ test.describe("Settings page", () => {
   });
 
   test("shows settings title", async ({ page }) => {
-    await expect(page.locator("h1:has-text('Settings')")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   });
 
   test("shows appearance section", async ({ page }) => {
-    await expect(page.locator("text=Appearance")).toBeVisible();
-    await expect(page.locator("text=Theme")).toBeVisible();
-    await expect(page.locator("text=Language")).toBeVisible();
+    await expect(page.getByText("Appearance")).toBeVisible();
+    await expect(page.getByText("Theme")).toBeVisible();
+    await expect(page.getByText("Language")).toBeVisible();
   });
 
   test("shows conversion section", async ({ page }) => {
-    await expect(page.locator("text=Conversion")).toBeVisible();
-    await expect(page.locator("text=Image quality")).toBeVisible();
+    await expect(page.getByText("Conversion")).toBeVisible();
+    await expect(page.getByText("Image quality")).toBeVisible();
   });
 
-  test("can change theme", async ({ page }) => {
+  test("can change theme to dark", async ({ page }) => {
     const select = page.locator("select").first();
     await select.selectOption("dark");
     await expect(page.locator("html")).toHaveClass(/dark/);
@@ -57,9 +57,9 @@ test.describe("Settings page", () => {
 test.describe("Navigation", () => {
   test("navigates between pages", async ({ page }) => {
     await page.goto("/");
-    await page.click("a[href='/settings']");
+    await page.getByRole("link", { name: "Settings" }).click();
     await expect(page).toHaveURL("/settings");
-    await page.click("a[href='/']");
+    await page.getByRole("link", { name: "Home" }).click();
     await expect(page).toHaveURL("/");
   });
 });
