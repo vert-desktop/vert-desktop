@@ -102,12 +102,21 @@ jobs:
             - **Pandoc** 3.6.4 (documents)
 
             ### Downloads
-            - **Linux**: `.deb` (Ubuntu/Debian) · `.AppImage` (universal) · `.snap` (Snap Store)
+            - **Linux**: `.deb` (Ubuntu/Debian) · `.AppImage` (universal) · `snap install vert-desktop`
             - **macOS Intel**: `.dmg`
             - **macOS Apple Silicon**: `.dmg`
           releaseDraft: ${{ inputs.draft || false }}
           prerelease: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Publish to Snap Store
+        if: matrix.platform == 'ubuntu-22.04' && secrets.SNAPCRAFT_STORE_CREDENTIALS != ''
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          SNAP_FILE=$(find src-tauri/target -name "*.snap" | head -1)
+          echo "Publishing $SNAP_FILE to Snap Store (stable channel)"
+          snapcraft upload --release=stable "$SNAP_FILE"
 
   update-homebrew:
     name: Update Homebrew Tap
