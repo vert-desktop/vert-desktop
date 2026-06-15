@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VERT Desktop — Privacy-first file converter</title>
+    <meta name="description" content="Convert images, audio, video and documents locally. No uploads. No servers. 100% private." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --green: #22c55e;
+        --green-dark: #16a34a;
+        --bg: #09090b;
+        --card: #111114;
+        --border: #27272a;
+        --text: #f4f4f5;
+        --muted: #a1a1aa;
+        --radius: 12px;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      /* NAV */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 2rem;
+        background: rgba(9,9,11,.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .logo { font-size: 1.25rem; font-weight: 800; color: var(--green); }
+      .logo span { color: var(--muted); font-weight: 400; font-size: 0.85rem; margin-left: .5rem; }
+      .nav-links { display: flex; gap: 1.5rem; }
+      .nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .15s; }
+      .nav-links a:hover { color: var(--text); }
+
+      /* HERO */
+      .hero {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 6rem 2rem 4rem;
+        text-align: center;
+      }
+      .badge {
+        display: inline-block;
+        background: var(--green)/10;
+        background: color-mix(in srgb, var(--green) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--green) 30%, transparent);
+        color: var(--green);
+        padding: .3rem 1rem;
+        border-radius: 999px;
+        font-size: .8rem;
+        font-weight: 600;
+        letter-spacing: .05em;
+        margin-bottom: 1.5rem;
+      }
+      h1 {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -.03em;
+        margin-bottom: 1.25rem;
+      }
+      h1 .accent { color: var(--green); }
+      .subtitle {
+        font-size: 1.15rem;
+        color: var(--muted);
+        max-width: 560px;
+        margin: 0 auto 2.5rem;
+      }
+      .cta-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .75rem 1.75rem;
+        border-radius: var(--radius);
+        font-size: .95rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .15s;
+        cursor: pointer;
+        border: none;
+      }
+      .btn-primary { background: var(--green); color: #000; }
+      .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+      .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+      .btn-outline:hover { border-color: var(--muted); background: var(--card); }
+
+      /* FEATURES */
+      .section { max-width: 1000px; margin: 0 auto; padding: 5rem 2rem; }
+      .section-title { text-align: center; font-size: 1.75rem; font-weight: 700; margin-bottom: .75rem; }
+      .section-sub { text-align: center; color: var(--muted); margin-bottom: 3rem; }
+
+      .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+      .feature-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+      }
+      .feature-icon {
+        font-size: 1.5rem;
+        margin-bottom: .75rem;
+      }
+      .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: .35rem; }
+      .feature-card p { font-size: .875rem; color: var(--muted); }
+
+      /* FORMATS */
+      .formats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+      @media (min-width: 640px) { .formats-grid { grid-template-columns: repeat(4, 1fr); } }
+      .format-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+      }
+      .format-card .cat-icon { font-size: 1.5rem; margin-bottom: .5rem; }
+      .format-card h3 { font-weight: 600; margin-bottom: .4rem; }
+      .format-card p { font-size: .8rem; color: var(--muted); }
+      .format-badge {
+        display: inline-block;
+        background: color-mix(in srgb, var(--green) 10%, transparent);
+        color: var(--green);
+        border: 1px solid color-mix(in srgb, var(--green) 25%, transparent);
+        padding: .15rem .55rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 600;
+        margin-bottom: .5rem;
+      }
+
+      /* INSTALL */
+      .install-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+      .tab-btn {
+        padding: .4rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        font-size: .875rem;
+        cursor: pointer;
+        transition: all .15s;
+        font-family: inherit;
+      }
+      .tab-btn.active { background: var(--card); border-color: var(--green); color: var(--text); }
+      .install-panel { display: none; }
+      .install-panel.active { display: block; }
+      .code-block {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: .875rem;
+        color: #e2e8f0;
+        overflow-x: auto;
+        position: relative;
+      }
+      .code-block .comment { color: #64748b; }
+      .code-block .cmd { color: var(--green); }
+
+      /* FOOTER */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 2rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: .85rem;
+      }
+      footer a { color: var(--muted); }
+      footer a:hover { color: var(--text); }
+
+      @media (max-width: 600px) {
+        nav { padding: 1rem; }
+        .nav-links { display: none; }
+        .hero { padding: 4rem 1rem 3rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="logo">VERT<span>Desktop</span></div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#formats">Formats</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/sindus/vert-desktop">GitHub</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="badge">Open Source · AGPL-3.0</div>
+      <h1>Convert anything.<br><span class="accent">Privately.</span></h1>
+      <p class="subtitle">
+        Images, audio, video, documents — all converted locally on your machine.
+        No uploads. No servers. No data leaves your computer.
+      </p>
+      <div class="cta-group">
+        <a href="https://github.com/sindus/vert-desktop/releases/latest" class="btn btn-primary">
+          ⬇ Download
+        </a>
+        <a href="https://github.com/sindus/vert-desktop" class="btn btn-outline">
+          View on GitHub
+        </a>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <h2 class="section-title">Built for privacy & speed</h2>
+      <p class="section-sub">No internet connection required after installation.</p>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>100% Local</h3>
+          <p>FFmpeg, ImageMagick and Pandoc run entirely on your machine as bundled sidecars.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Native Speed</h3>
+          <p>No WebAssembly overhead — native binaries convert at full CPU speed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3>Batch Convert</h3>
+          <p>Drop multiple files at once. Convert them all with a single click.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌍</div>
+          <h3>15 Languages</h3>
+          <p>EN, FR, DE, ES, IT, BS, HR, ID, TR, JA, KO, EL, ZH, PT-BR and more.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Light & Dark</h3>
+          <p>Follows your system preference. Toggle manually in settings.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛠</div>
+          <h3>Open Source</h3>
+          <p>AGPL-3.0. Inspect, fork, or self-host. Built with Rust + Tauri + React.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <h2 class="section-title">250+ formats</h2>
+      <p class="section-sub">Powered by FFmpeg, ImageMagick, and Pandoc.</p>
+      <div class="formats-grid">
+        <div class="format-card">
+          <div class="cat-icon">🖼</div>
+          <div class="format-badge">150+ formats</div>
+          <h3>Images</h3>
+          <p>PNG, JPEG, WebP, AVIF, HEIC, JXL, GIF, BMP, TIFF, SVG, PSD, RAW and more</p>
+        </div>
+        <div class="format-card">
+          <div class="cat-icon">🎵</div>
+          <div class="format-badge">40+ formats</div>
+          <h3>Audio</h3>
+          <p>MP3, WAV, FLAC, OGG, Opus, AAC, ALAC, M4A, AIFF, WMA and more</p>
+        </div>
+        <div class="format-card">
+          <div class="cat-icon">🎬</div>
+          <div class="format-badge">30+ formats</div>
+          <h3>Video</h3>
+          <p>MP4, MKV, WebM, AVI, MOV, GIF, TS, M4V, 3GP, OGV and more</p>
+        </div>
+        <div class="format-card">
+          <div class="cat-icon">📄</div>
+          <div class="format-badge">12 formats</div>
+          <h3>Documents</h3>
+          <p>DOCX, Markdown, HTML, RTF, EPUB, ODT, RST, CSV and more</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="install">
+      <h2 class="section-title">Installation</h2>
+      <p class="section-sub">Available for macOS and Linux.</p>
+
+      <div class="install-tabs">
+        <button class="tab-btn active" onclick="showTab('macos')">macOS</button>
+        <button class="tab-btn" onclick="showTab('linux-deb')">Linux (Debian/Ubuntu)</button>
+        <button class="tab-btn" onclick="showTab('linux-appimage')">Linux (AppImage)</button>
+      </div>
+
+      <div id="tab-macos" class="install-panel active">
+        <div class="code-block">
+          <div><span class="comment"># Via Homebrew</span></div>
+          <div><span class="cmd">brew</span> tap sindus/vert-desktop</div>
+          <div><span class="cmd">brew</span> install --cask vert-desktop</div>
+          <br />
+          <div><span class="comment"># Or download the .dmg from GitHub Releases</span></div>
+        </div>
+      </div>
+
+      <div id="tab-linux-deb" class="install-panel">
+        <div class="code-block">
+          <div><span class="comment"># Download the latest .deb</span></div>
+          <div><span class="cmd">wget</span> https://github.com/sindus/vert-desktop/releases/latest/download/vert-desktop_amd64.deb</div>
+          <div><span class="cmd">sudo dpkg</span> -i vert-desktop_amd64.deb</div>
+        </div>
+      </div>
+
+      <div id="tab-linux-appimage" class="install-panel">
+        <div class="code-block">
+          <div><span class="comment"># Download the AppImage</span></div>
+          <div><span class="cmd">wget</span> https://github.com/sindus/vert-desktop/releases/latest/download/vert-desktop.AppImage</div>
+          <div><span class="cmd">chmod</span> +x vert-desktop.AppImage</div>
+          <div><span class="cmd">./vert-desktop.AppImage</span></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        Made with ♥ · <a href="https://github.com/sindus/vert-desktop">GitHub</a> ·
+        Inspired by <a href="https://vert.sh">VERT.sh</a> ·
+        AGPL-3.0
+      </p>
+    </footer>
+
+    <script>
+      function showTab(id) {
+        document.querySelectorAll('.install-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + id).classList.add('active');
+        event.target.classList.add('active');
+      }
+    </script>
+  </body>
+</html>
