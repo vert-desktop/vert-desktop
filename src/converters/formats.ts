@@ -43,7 +43,6 @@ export const VIDEO_FORMATS: FormatInfo[] = [
   { ext: "avi", label: "AVI", canInput: true, canOutput: true },
   { ext: "mov", label: "MOV", canInput: true, canOutput: true },
   { ext: "wmv", label: "WMV", canInput: true, canOutput: true },
-  { ext: "gif", label: "GIF", canInput: true, canOutput: true },
   { ext: "ts", label: "TS", canInput: true, canOutput: true },
   { ext: "m4v", label: "M4V", canInput: true, canOutput: true },
   { ext: "3gp", label: "3GP", canInput: true, canOutput: true },

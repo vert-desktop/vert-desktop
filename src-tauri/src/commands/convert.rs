@@ -30,8 +30,8 @@ fn detect_category(extension: &str) -> &'static str {
     match extension.to_lowercase().as_str() {
         "mp3" | "wav" | "flac" | "ogg" | "opus" | "aac" | "alac" | "m4a" | "wma" | "aiff"
         | "mp2" | "au" | "m4b" | "voc" => "audio",
-        "mp4" | "mkv" | "webm" | "avi" | "mov" | "wmv" | "gif" | "mts" | "ts" | "m2ts" | "mpg"
-        | "mpeg" | "flv" | "vob" | "m4v" | "3gp" | "ogv" => "video",
+        "mp4" | "mkv" | "webm" | "avi" | "mov" | "wmv" | "mts" | "ts" | "m2ts" | "mpg" | "mpeg"
+        | "flv" | "vob" | "m4v" | "3gp" | "ogv" => "video",
         "docx" | "doc" | "md" | "html" | "rtf" | "csv" | "rst" | "epub" | "odt" => "document",
         _ => "image",
     }
