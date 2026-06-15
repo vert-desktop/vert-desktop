@@ -4,6 +4,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../store";
 import type { ConvertFile } from "../converters/types";
 
+function extractMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null) {
+    const e = err as Record<string, unknown>;
+    if (typeof e["message"] === "string") return e["message"];
+    if (typeof e["kind"] === "string") return e["kind"];
+    return JSON.stringify(err);
+  }
+  return String(err);
+}
+
 export default function ConversionPanel() {
   const { t } = useTranslation();
   const files = useAppStore((s) => s.files);
@@ -24,7 +35,7 @@ export default function ConversionPanel() {
         "convert_file",
         {
           request: {
-            input_path: file.file.name,
+            input_path: file.filePath,
             output_format: file.targetFormat,
             options: {
               quality: settings.quality,
@@ -42,13 +53,9 @@ export default function ConversionPanel() {
         outputPath: result.output_path,
       });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = extractMessage(err);
       updateFile(file.id, { status: "error", progress: 0, error: message });
-      addToast(
-        t("errors.conversionFailed", { message }),
-        "error",
-      );
+      addToast(t("errors.conversionFailed", { message }), "error");
     }
   };
 
@@ -67,10 +74,7 @@ export default function ConversionPanel() {
           <span>{t("convert.converting")}</span>
         ) : (
           <span>
-            {t("convert.progress", {
-              current: doneFiles.length,
-              total: files.length,
-            })}
+            {t("convert.progress", { current: doneFiles.length, total: files.length })}
           </span>
         )}
       </div>

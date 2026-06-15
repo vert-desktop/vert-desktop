@@ -13,6 +13,7 @@ interface FileCardProps {
 }
 
 function formatBytes(bytes: number): string {
+  if (bytes === 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -33,13 +34,13 @@ export default function FileCard({ file }: FileCardProps) {
 
     try {
       const savePath = await save({
-        defaultPath: `${file.name.split(".")[0]}.${file.targetFormat}`,
+        defaultPath: `${file.name.replace(/\.[^.]+$/, "")}.${file.targetFormat}`,
         filters: [{ name: file.targetFormat.toUpperCase(), extensions: [file.targetFormat] }],
       });
 
       if (savePath) {
         await copyFile(file.outputPath, savePath);
-        addToast(`${file.name} saved`, "success");
+        addToast(`${file.name} → ${file.targetFormat.toUpperCase()} saved`, "success");
       }
     } catch {
       addToast(t("errors.saveError"), "error");
@@ -57,9 +58,7 @@ export default function FileCard({ file }: FileCardProps) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-[rgb(var(--fg))]">
-            {file.name}
-          </p>
+          <p className="truncate text-sm font-medium text-[rgb(var(--fg))]">{file.name}</p>
           <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
             {formatBytes(file.sizeBytes)} · {file.extension.toUpperCase()} · {file.category}
           </p>
@@ -86,10 +85,7 @@ export default function FileCard({ file }: FileCardProps) {
           )}
 
           {isConverting ? (
-            <button
-              className="rounded-lg p-1.5 text-[rgb(var(--muted))] hover:text-red-500"
-              title={t("convert.cancel")}
-            >
+            <button className="rounded-lg p-1.5 text-[rgb(var(--muted))] hover:text-red-500" title={t("convert.cancel")}>
               <X size={16} />
             </button>
           ) : (
@@ -104,9 +100,7 @@ export default function FileCard({ file }: FileCardProps) {
         </div>
       </div>
 
-      {isConverting && (
-        <ProgressBar value={file.progress} />
-      )}
+      {isConverting && <ProgressBar value={file.progress} />}
 
       {isError && file.error && (
         <p className="text-xs text-red-600 dark:text-red-400">{file.error}</p>

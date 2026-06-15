@@ -7,6 +7,7 @@ src-tauri/target/
 
 # Tauri generated files
 src-tauri/gen/
+# Sidecar binaries — downloaded via `pnpm setup`, bundled in CI
 src-tauri/binaries/
 
 # Test outputs

@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useAppStore } from "../../src/store";
 
-function makeFile(name: string, size = 1024): File {
-  return new File(["content"], name, { type: "application/octet-stream", lastModified: 0 });
-}
+// Mock invoke to return a fake file info
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn().mockResolvedValue({ size_bytes: 1024 }),
+}));
 
 describe("useAppStore", () => {
   beforeEach(() => {
@@ -14,41 +15,52 @@ describe("useAppStore", () => {
     });
   });
 
-  describe("addFiles", () => {
-    it("adds supported files", () => {
-      const { addFiles } = useAppStore.getState();
-      addFiles([makeFile("photo.png"), makeFile("song.mp3")]);
+  describe("addFilePaths", () => {
+    it("adds supported files by path", async () => {
+      const { addFilePaths } = useAppStore.getState();
+      await addFilePaths(["/home/user/photo.png", "/home/user/song.mp3"]);
       expect(useAppStore.getState().files).toHaveLength(2);
     });
 
-    it("skips unsupported files", () => {
-      const { addFiles } = useAppStore.getState();
-      addFiles([makeFile("archive.tar.gz"), makeFile("photo.png")]);
+    it("skips unsupported file extensions", async () => {
+      const { addFilePaths } = useAppStore.getState();
+      await addFilePaths(["/home/user/archive.tar.gz", "/home/user/photo.png"]);
       expect(useAppStore.getState().files).toHaveLength(1);
     });
 
-    it("assigns correct category", () => {
-      const { addFiles } = useAppStore.getState();
-      addFiles([makeFile("photo.png"), makeFile("song.mp3"), makeFile("movie.mp4")]);
+    it("assigns correct category from extension", async () => {
+      const { addFilePaths } = useAppStore.getState();
+      await addFilePaths(["/path/photo.png", "/path/song.mp3", "/path/movie.mp4"]);
       const files = useAppStore.getState().files;
       expect(files.find((f) => f.name === "photo.png")?.category).toBe("image");
       expect(files.find((f) => f.name === "song.mp3")?.category).toBe("audio");
       expect(files.find((f) => f.name === "movie.mp4")?.category).toBe("video");
     });
 
-    it("assigns unique ids", () => {
-      const { addFiles } = useAppStore.getState();
-      addFiles([makeFile("a.png"), makeFile("b.png"), makeFile("c.png")]);
+    it("extracts file name from full path", async () => {
+      const { addFilePaths } = useAppStore.getState();
+      await addFilePaths(["/home/user/documents/report.docx"]);
+      expect(useAppStore.getState().files[0].name).toBe("report.docx");
+    });
+
+    it("assigns unique ids", async () => {
+      const { addFilePaths } = useAppStore.getState();
+      await addFilePaths(["/a.png", "/b.png", "/c.png"]);
       const ids = useAppStore.getState().files.map((f) => f.id);
-      const unique = new Set(ids);
-      expect(unique.size).toBe(3);
+      expect(new Set(ids).size).toBe(3);
+    });
+
+    it("stores the full file path", async () => {
+      const { addFilePaths } = useAppStore.getState();
+      await addFilePaths(["/home/user/photo.png"]);
+      expect(useAppStore.getState().files[0].filePath).toBe("/home/user/photo.png");
     });
   });
 
   describe("removeFile", () => {
-    it("removes a file by id", () => {
-      const { addFiles, removeFile } = useAppStore.getState();
-      addFiles([makeFile("photo.png")]);
+    it("removes a file by id", async () => {
+      const { addFilePaths, removeFile } = useAppStore.getState();
+      await addFilePaths(["/photo.png"]);
       const { files } = useAppStore.getState();
       removeFile(files[0].id);
       expect(useAppStore.getState().files).toHaveLength(0);
@@ -56,18 +68,18 @@ describe("useAppStore", () => {
   });
 
   describe("clearFiles", () => {
-    it("removes all files", () => {
-      const { addFiles, clearFiles } = useAppStore.getState();
-      addFiles([makeFile("a.png"), makeFile("b.mp3")]);
+    it("removes all files", async () => {
+      const { addFilePaths, clearFiles } = useAppStore.getState();
+      await addFilePaths(["/a.png", "/b.mp3"]);
       clearFiles();
       expect(useAppStore.getState().files).toHaveLength(0);
     });
   });
 
   describe("updateFile", () => {
-    it("updates specific fields", () => {
-      const { addFiles, updateFile } = useAppStore.getState();
-      addFiles([makeFile("photo.png")]);
+    it("updates specific fields", async () => {
+      const { addFilePaths, updateFile } = useAppStore.getState();
+      await addFilePaths(["/photo.png"]);
       const id = useAppStore.getState().files[0].id;
       updateFile(id, { status: "converting", progress: 42 });
       const file = useAppStore.getState().files[0];
@@ -77,9 +89,9 @@ describe("useAppStore", () => {
   });
 
   describe("setTargetFormat", () => {
-    it("changes the target format", () => {
-      const { addFiles, setTargetFormat } = useAppStore.getState();
-      addFiles([makeFile("photo.png")]);
+    it("changes the target format", async () => {
+      const { addFilePaths, setTargetFormat } = useAppStore.getState();
+      await addFilePaths(["/photo.png"]);
       const id = useAppStore.getState().files[0].id;
       setTargetFormat(id, "webp");
       expect(useAppStore.getState().files[0].targetFormat).toBe("webp");

@@ -15,59 +15,24 @@ permissions:
   contents: write
 
 jobs:
-  prepare-binaries:
-    name: Download Sidecars (${{ matrix.platform }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            ffmpeg_url: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
-            magick_url: https://github.com/ImageMagick/ImageMagick/releases/download/7.1.1-43/ImageMagick-7.1.1-43-x86_64.AppImage
-            pandoc_url: https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-linux-amd64.tar.gz
-          - platform: macos-13
-            target: x86_64-apple-darwin
-            ffmpeg_url: https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip
-            magick_url: https://imagemagick.org/archive/binaries/ImageMagick-x86_64-apple-darwin20.1.0.tar.gz
-            pandoc_url: https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-x86_64-macOS.zip
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-            ffmpeg_url: https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip
-            magick_url: https://imagemagick.org/archive/binaries/ImageMagick-arm64-apple-darwin23.6.0.tar.gz
-            pandoc_url: https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-arm64-macOS.zip
-
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download sidecars
-        shell: bash
-        run: .github/scripts/download-sidecars.sh "${{ matrix.target }}"
-        env:
-          FFMPEG_URL: ${{ matrix.ffmpeg_url }}
-          MAGICK_URL: ${{ matrix.magick_url }}
-          PANDOC_URL: ${{ matrix.pandoc_url }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sidecars-${{ matrix.target }}
-          path: src-tauri/binaries/
-
   build:
-    name: Build (${{ matrix.platform }})
-    needs: prepare-binaries
+    name: Build (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-22.04
+          - name: Linux x86_64
+            platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bundles: deb,appimage
-          - platform: macos-13
+
+          - name: macOS Intel
+            platform: macos-13
             target: x86_64-apple-darwin
             bundles: dmg
-          - platform: macos-latest
+
+          - name: macOS Apple Silicon
+            platform: macos-latest
             target: aarch64-apple-darwin
             bundles: dmg
 
@@ -84,11 +49,15 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install Linux dependencies
+      - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -98,11 +67,12 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Download sidecar binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: sidecars-${{ matrix.target }}
-          path: src-tauri/binaries/
+      - name: Download static sidecars
+        shell: bash
+        run: bash scripts/setup-dev-sidecars.sh
+        env:
+          # Ensure the script picks the right target triple
+          RUST_TARGET: ${{ matrix.target }}
 
       - run: pnpm install --frozen-lockfile
 
@@ -117,10 +87,16 @@ jobs:
           releaseBody: |
             ## VERT Desktop ${{ github.ref_name }}
 
-            Privacy-first file converter — all conversions happen locally.
+            Privacy-first file converter — converts images, audio, video and documents
+            entirely locally. No uploads, no servers, no internet required.
+
+            ### Included
+            - **FFmpeg** 7.0.2 (audio + video)
+            - **ImageMagick** 7.1.2 (images, 150+ formats)
+            - **Pandoc** 3.6.4 (documents)
 
             ### Downloads
-            - **Linux**: `.deb` (Ubuntu/Debian) or `.AppImage` (universal)
+            - **Linux**: `.deb` (Ubuntu/Debian) · `.AppImage` (universal)
             - **macOS Intel**: `.dmg`
             - **macOS Apple Silicon**: `.dmg`
           releaseDraft: ${{ inputs.draft || false }}
@@ -139,20 +115,11 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: homebrew-tap
 
-      - name: Get release assets
-        id: release
-        run: |
-          TAG=${{ github.ref_name }}
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
-
-      - name: Update Homebrew formula
+      - name: Update formula
         working-directory: homebrew-tap
         run: |
-          VERSION=${{ steps.release.outputs.version }}
-          TAG=${{ steps.release.outputs.tag }}
-
-          # Fetch the macOS ARM64 DMG URL and SHA256
+          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
           DMG_URL="https://github.com/sindus/vert-desktop/releases/download/${TAG}/VERT.Desktop_${VERSION}_aarch64.dmg"
           SHA256=$(curl -sL "${DMG_URL}" | sha256sum | awk '{print $1}')
 
@@ -165,7 +132,7 @@ jobs:
                 verified: "github.com/sindus/vert-desktop/"
 
             name "VERT Desktop"
-            desc "Privacy-first file converter — runs entirely on your machine"
+            desc "Privacy-first file converter — images, audio, video, documents. No uploads."
             homepage "https://sindus.github.io/vert-desktop"
 
             app "VERT Desktop.app"

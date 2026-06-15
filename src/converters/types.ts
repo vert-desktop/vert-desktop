@@ -16,7 +16,7 @@ export interface FormatInfo {
 
 export interface ConvertFile {
   id: string;
-  file: File;
+  filePath: string;
   name: string;
   sizeBytes: number;
   extension: string;

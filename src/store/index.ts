@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ConvertFile, AppSettings } from "../converters/types";
 import { detectCategory, getDefaultOutputFormat } from "../converters/formats";
+import { invoke } from "@tauri-apps/api/core";
 
 const DEFAULT_SETTINGS: AppSettings = {
   theme: "system",
@@ -21,7 +22,7 @@ interface AppState {
   files: ConvertFile[];
   settings: AppSettings;
   toasts: Toast[];
-  addFiles: (files: File[]) => void;
+  addFilePaths: (paths: string[]) => Promise<void>;
   removeFile: (id: string) => void;
   clearFiles: () => void;
   updateFile: (id: string, patch: Partial<ConvertFile>) => void;
@@ -48,32 +49,41 @@ export const useAppStore = create<AppState>()(
       settings: DEFAULT_SETTINGS,
       toasts: [],
 
-      addFiles: (rawFiles: File[]) => {
+      addFilePaths: async (paths: string[]) => {
         const { settings } = get();
-        const newFiles: ConvertFile[] = rawFiles
-          .map((f) => {
-            const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
-            const category = detectCategory(f.name);
-            if (!category) return null;
 
-            const defaultFormatKey = `default${category.charAt(0).toUpperCase() + category.slice(1)}Format` as keyof AppSettings;
-            const targetFormat = settings.useDefaultsAutomatically
-              ? (settings[defaultFormatKey] as string)
-              : getDefaultOutputFormat(category);
+        const newFiles: ConvertFile[] = [];
+        for (const filePath of paths) {
+          const name = filePath.split("/").pop() ?? filePath;
+          const ext = name.split(".").pop()?.toLowerCase() ?? "";
+          const category = detectCategory(name);
+          if (!category) continue;
 
-            return {
-              id: generateId(),
-              file: f,
-              name: f.name,
-              sizeBytes: f.size,
-              extension: ext,
-              category,
-              targetFormat,
-              status: "idle" as const,
-              progress: 0,
-            };
-          })
-          .filter(Boolean) as ConvertFile[];
+          let sizeBytes = 0;
+          try {
+            const info = await invoke<{ size_bytes: number }>("get_file_info", { path: filePath });
+            sizeBytes = info.size_bytes;
+          } catch {
+            // size stays 0
+          }
+
+          const defaultFormatKey = `default${category.charAt(0).toUpperCase() + category.slice(1)}Format` as keyof AppSettings;
+          const targetFormat = settings.useDefaultsAutomatically
+            ? (settings[defaultFormatKey] as string)
+            : getDefaultOutputFormat(category);
+
+          newFiles.push({
+            id: generateId(),
+            filePath,
+            name,
+            sizeBytes,
+            extension: ext,
+            category,
+            targetFormat,
+            status: "idle" as const,
+            progress: 0,
+          });
+        }
 
         set((state) => ({ files: [...state.files, ...newFiles] }));
       },
