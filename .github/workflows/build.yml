@@ -110,11 +110,19 @@ jobs:
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       - name: Publish to Snap Store
-        if: matrix.platform == 'ubuntu-22.04' && secrets.SNAPCRAFT_STORE_CREDENTIALS != ''
+        if: matrix.platform == 'ubuntu-22.04'
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         run: |
+          if [ -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+            echo "No Snapcraft credentials configured, skipping publish"
+            exit 0
+          fi
           SNAP_FILE=$(find src-tauri/target -name "*.snap" | head -1)
+          if [ -z "$SNAP_FILE" ]; then
+            echo "No .snap file found, skipping publish"
+            exit 0
+          fi
           echo "Publishing $SNAP_FILE to Snap Store (stable channel)"
           snapcraft upload --release=stable "$SNAP_FILE"
 
