@@ -30,8 +30,8 @@ fn detect_category(extension: &str) -> &'static str {
     match extension.to_lowercase().as_str() {
         "mp3" | "wav" | "flac" | "ogg" | "opus" | "aac" | "alac" | "m4a" | "wma" | "aiff"
         | "mp2" | "au" | "m4b" | "voc" => "audio",
-        "mp4" | "mkv" | "webm" | "avi" | "mov" | "wmv" | "gif" | "mts" | "ts" | "m2ts"
-        | "mpg" | "mpeg" | "flv" | "vob" | "m4v" | "3gp" | "ogv" => "video",
+        "mp4" | "mkv" | "webm" | "avi" | "mov" | "wmv" | "gif" | "mts" | "ts" | "m2ts" | "mpg"
+        | "mpeg" | "flv" | "vob" | "m4v" | "3gp" | "ogv" => "video",
         "docx" | "doc" | "md" | "html" | "rtf" | "csv" | "rst" | "epub" | "odt" => "document",
         _ => "image",
     }
@@ -58,18 +58,10 @@ pub async fn convert_file(
     let output_path = tmp_dir.path().join(&output_filename);
 
     match category {
-        "image" => {
-            convert_image(&app, &input_path, &output_path, &request.options).await?
-        }
-        "audio" => {
-            convert_audio(&app, &input_path, &output_path, &request.options).await?
-        }
-        "video" => {
-            convert_video(&app, &input_path, &output_path, &request.options).await?
-        }
-        "document" => {
-            convert_document(&app, &input_path, &output_path).await?
-        }
+        "image" => convert_image(&app, &input_path, &output_path, &request.options).await?,
+        "audio" => convert_audio(&app, &input_path, &output_path, &request.options).await?,
+        "video" => convert_video(&app, &input_path, &output_path, &request.options).await?,
+        "document" => convert_document(&app, &input_path, &output_path).await?,
         _ => return Err(AppError::UnsupportedFormat(input_ext)),
     }
 
@@ -202,11 +194,7 @@ async fn convert_video(
     Ok(())
 }
 
-async fn convert_document(
-    app: &AppHandle,
-    input: &PathBuf,
-    output: &PathBuf,
-) -> Result<()> {
+async fn convert_document(app: &AppHandle, input: &PathBuf, output: &PathBuf) -> Result<()> {
     let result = app
         .shell()
         .sidecar("pandoc")
