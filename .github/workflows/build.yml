@@ -114,13 +114,29 @@ jobs:
         uses: snapcore/action-build@v1
         id: snapcraft
 
-      - name: Publish to Snap Store
+      - name: Upload snap artifact
         if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap
+          path: ${{ steps.snapcraft.outputs.snap }}
+
+  publish-snap:
+    name: Publish Snap
+    needs: build
+    runs-on: ubuntu-24.04
+    if: always() && needs.build.result != 'cancelled'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: snap
+
+      - name: Publish to Snap Store
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
-          snap: ${{ steps.snapcraft.outputs.snap }}
+          snap: "*.snap"
           release: stable
 
   update-homebrew:
