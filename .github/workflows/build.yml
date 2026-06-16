@@ -116,10 +116,9 @@ jobs:
 
       - name: Publish to Snap Store
         if: matrix.platform == 'ubuntu-22.04'
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         run: |
-          if [ -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+          CREDS="${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}"
+          if [ -z "$CREDS" ]; then
             echo "No Snapcraft credentials, skipping publish"
             exit 0
           fi
@@ -131,6 +130,9 @@ jobs:
             echo "No .snap file found"
             exit 1
           fi
+          printf '%s' "$CREDS" > /tmp/snap-creds
+          snapcraft login --with /tmp/snap-creds
+          rm -f /tmp/snap-creds
           echo "Publishing $SNAP_FILE to Snap Store (stable)"
           snapcraft upload --release=stable "$SNAP_FILE"
 
