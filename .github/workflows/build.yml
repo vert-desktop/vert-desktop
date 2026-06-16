@@ -132,12 +132,12 @@ jobs:
           name: snap
 
       - name: Publish to Snap Store
-        uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-        with:
-          snap: "*.snap"
-          release: stable
+        run: |
+          sudo snap install --classic snapcraft
+          SNAP_FILE=$(find . -name "*.snap" -maxdepth 2 | head -1)
+          snapcraft upload "$SNAP_FILE" --release stable
 
   update-homebrew:
     name: Update Homebrew Tap
