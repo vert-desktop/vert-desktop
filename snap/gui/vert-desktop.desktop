@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=VERT Desktop
+Comment=Privacy-first file converter — images, audio, video, documents
+Exec=vert-desktop
+Icon=${SNAP}/meta/gui/vert-desktop.png
+Terminal=false
+Type=Application
+Categories=Utility;Office;
