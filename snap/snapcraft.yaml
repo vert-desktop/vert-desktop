@@ -35,3 +35,8 @@ parts:
     source: snap-staging/
     stage:
       - bin/
+
+  imagemagick:
+    plugin: nil
+    stage-packages:
+      - imagemagick

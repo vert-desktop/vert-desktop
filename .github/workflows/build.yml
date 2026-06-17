@@ -105,8 +105,11 @@ jobs:
           mkdir -p snap-staging/bin
           cp src-tauri/target/x86_64-unknown-linux-gnu/release/vert-desktop snap-staging/bin/
           cp src-tauri/binaries/ffmpeg-x86_64-unknown-linux-gnu   snap-staging/bin/
-          cp src-tauri/binaries/magick-x86_64-unknown-linux-gnu   snap-staging/bin/
           cp src-tauri/binaries/pandoc-x86_64-unknown-linux-gnu   snap-staging/bin/
+          # magick is provided via stage-packages (imagemagick from Ubuntu repos)
+          # Use a wrapper so Tauri finds it by the expected sidecar name
+          printf '#!/bin/sh\nexec "$SNAP/usr/bin/convert" "$@"\n' \
+            > snap-staging/bin/magick-x86_64-unknown-linux-gnu
           chmod +x snap-staging/bin/*
 
       - name: Build snap package
