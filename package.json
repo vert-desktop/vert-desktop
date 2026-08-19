@@ -1,6 +1,6 @@
 {
   "name": "vert-desktop",
-  "version": "0.1.17",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

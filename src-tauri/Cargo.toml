@@ -1,6 +1,6 @@
 [package]
 name = "vert-desktop"
-version = "0.1.17"
+version = "1.0.0"
 description = "VERT Desktop - Privacy-first file converter"
 authors = ["Sikander RAVATE"]
 license = "AGPL-3.0"
