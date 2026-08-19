@@ -1,0 +1,151 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: "Create as draft release"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
+
+          - name: macOS Apple Silicon
+            platform: macos-latest
+            target: aarch64-apple-darwin
+            bundles: dmg
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Download static sidecars
+        shell: bash
+        run: bash scripts/setup-dev-sidecars.sh
+        env:
+          # Ensure the script picks the right target triple
+          RUST_TARGET: ${{ matrix.target }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "VERT Desktop ${{ github.ref_name }}"
+          releaseBody: |
+            ## VERT Desktop ${{ github.ref_name }}
+
+            Privacy-first file converter — converts images, audio, video and documents
+            entirely locally. No uploads, no servers, no internet required.
+
+            ### Included
+            - **FFmpeg** 7.0.2 (audio + video)
+            - **ImageMagick** 7.1.2 (images, 150+ formats)
+            - **Pandoc** 3.6.4 (documents)
+
+            ### Downloads
+            - **Linux**: `.deb` (Ubuntu/Debian) · `.AppImage` (universal) · one-line install script
+            - **macOS Apple Silicon**: `.dmg` · Homebrew · one-line install script
+
+            ### Quick install
+
+            ```sh
+            curl -fsSL https://vert-desktop.github.io/vert-desktop/install.sh | sh
+            ```
+          releaseDraft: ${{ inputs.draft || false }}
+          prerelease: false
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+  update-homebrew:
+    name: Update Homebrew Tap
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: vert-desktop/homebrew-tap
+          token: ${{ secrets.GH_PAT }}
+          path: homebrew-tap
+
+      - name: Update formula
+        working-directory: homebrew-tap
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
+          DMG_URL="https://github.com/vert-desktop/vert-desktop/releases/download/${TAG}/VERT.Desktop_${VERSION}_aarch64.dmg"
+          SHA256=$(curl -sL "${DMG_URL}" | sha256sum | awk '{print $1}')
+
+          cat > Casks/vert-desktop.rb << EOF
+          cask "vert-desktop" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "https://github.com/vert-desktop/vert-desktop/releases/download/v#{version}/VERT.Desktop_#{version}_aarch64.dmg",
+                verified: "github.com/vert-desktop/vert-desktop/"
+
+            name "VERT Desktop"
+            desc "Privacy-first file converter — images, audio, video, documents. No uploads."
+            homepage "https://vert-desktop.github.io/vert-desktop/"
+
+            app "VERT Desktop.app"
+
+            zap trash: [
+              "~/Library/Application Support/sh.vert.desktop",
+              "~/Library/Preferences/sh.vert.desktop.plist",
+            ]
+          end
+          EOF
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Casks/vert-desktop.rb
+          git commit -m "vert-desktop: update to ${VERSION}"
+          git push
